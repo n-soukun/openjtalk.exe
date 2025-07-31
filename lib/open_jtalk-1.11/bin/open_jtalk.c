@@ -189,8 +189,11 @@ static int Open_JTalk_synthesis(Open_JTalk * open_jtalk, const char *txt, FILE *
           (&open_jtalk->engine, JPCommon_get_label_feature(&open_jtalk->jpcommon),
            JPCommon_get_label_size(&open_jtalk->jpcommon)) == TRUE)
          result = 1;
-      if (wavfp != NULL)
+      if (wavfp != NULL) {
          HTS_Engine_save_riff(&open_jtalk->engine, wavfp);
+      } else {
+         HTS_Engine_save_riff(&open_jtalk->engine, stdout);
+      }
       if (logfp != NULL) {
          fprintf(logfp, "[Text analysis result]\n");
          NJD_fprint(&open_jtalk->njd, logfp);
