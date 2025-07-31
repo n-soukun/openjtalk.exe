@@ -1,0 +1,135 @@
+name: Build and Release OpenJTalk
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Tag name for the release"
+        required: true
+        default: "v1.0.0"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Create HTS Engine API install directory
+        run: |
+          mkdir "C:\hts_engine_API"
+          mkdir "C:\hts_engine_API\include"
+          mkdir "C:\hts_engine_API\lib"
+          mkdir "C:\hts_engine_API\bin"
+        shell: cmd
+
+      - name: Build HTS Engine API
+        run: |
+          cd lib\hts_engine_API-1.10
+          nmake /f Makefile.mak
+          nmake /f Makefile.mak install
+        shell: cmd
+
+      - name: Verify HTS Engine API installation
+        run: |
+          dir "C:\hts_engine_API\include"
+          dir "C:\hts_engine_API\lib"
+          dir "C:\hts_engine_API\bin"
+        shell: cmd
+
+      - name: Create Open JTalk install directory
+        run: |
+          mkdir "C:\open_jtalk"
+          mkdir "C:\open_jtalk\bin"
+        shell: cmd
+
+      - name: Build Open JTalk
+        run: |
+          cd lib\open_jtalk-1.11
+          nmake /f Makefile.mak
+          nmake /f Makefile.mak install
+        shell: cmd
+
+      - name: Verify Open JTalk build
+        run: |
+          dir "C:\open_jtalk\bin"
+          dir "lib\open_jtalk-1.11\bin"
+        shell: cmd
+
+      - name: Prepare release artifacts
+        run: |
+          mkdir release
+          copy "C:\open_jtalk\bin\open_jtalk.exe" "release\"
+          copy "LICENSE" "release\"
+          copy "Readme.md" "release\"
+        shell: cmd
+
+      - name: Create release archive
+        run: |
+          powershell Compress-Archive -Path "release\*" -DestinationPath "openjtalk-windows-x64.zip"
+        shell: cmd
+
+      - name: Get tag name
+        id: get_tag
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+            $tag_name = "${{ github.event.inputs.tag_name }}"
+          } else {
+            $tag_name = $env:GITHUB_REF -replace "refs/tags/", ""
+          }
+          echo "tag_name=$tag_name" >> $env:GITHUB_OUTPUT
+          echo "release_name=OpenJTalk $tag_name" >> $env:GITHUB_OUTPUT
+        shell: powershell
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_tag.outputs.tag_name }}
+          name: ${{ steps.get_tag.outputs.release_name }}
+          body: |
+            # OpenJTalk Release ${{ steps.get_tag.outputs.tag_name }}
+
+            This release contains the compiled OpenJTalk binary for Windows x64.
+
+            ## Contents
+            - `open_jtalk.exe` - Main OpenJTalk executable
+            - `LICENSE` - License file
+            - `Readme.md` - Project documentation
+
+            ## Usage
+            Extract the archive and run `open_jtalk.exe` with appropriate parameters.
+
+            ## Build Information
+            - Built on: Windows (GitHub Actions)
+            - Compiler: MSVC
+            - Architecture: x64
+            - HTS Engine API: 1.10
+            - Open JTalk: 1.11
+          files: |
+            openjtalk-windows-x64.zip
+            release/open_jtalk.exe
+            release/LICENSE
+            release/Readme.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openjtalk-windows-x64
+          path: release/
+          retention-days: 30

@@ -1,0 +1,45 @@
+# Build artifacts
+*.exe
+*.obj
+*.lib
+*.dll
+*.so
+*.dylib
+*.a
+
+# Install directories
+C:/hts_engine_API/
+C:/open_jtalk/
+/usr/local/hts_engine_API/
+/usr/local/open_jtalk/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# IDE files
+.vscode/
+.vs/
+*.user
+*.suo
+*.sln
+
+# OS generated files
+.DS_Store
+Thumbs.db
+*.log
+
+# Release artifacts (keep for local testing)
+release/
+artifacts/
+*.zip
+*.tar.gz
+
+# Node modules (if using any JS tools)
+node_modules/
+
+# Python cache (if using any Python tools)
+__pycache__/
+*.pyc
+*.pyo

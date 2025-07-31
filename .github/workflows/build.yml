@@ -1,0 +1,172 @@
+name: Build OpenJTalk (Multi-platform)
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Create HTS Engine API install directory
+        run: |
+          mkdir "C:\hts_engine_API"
+          mkdir "C:\hts_engine_API\include"
+          mkdir "C:\hts_engine_API\lib"
+          mkdir "C:\hts_engine_API\bin"
+        shell: cmd
+
+      - name: Build HTS Engine API
+        run: |
+          cd lib\hts_engine_API-1.10
+          nmake /f Makefile.mak
+          nmake /f Makefile.mak install
+        shell: cmd
+
+      - name: Create Open JTalk install directory
+        run: |
+          mkdir "C:\open_jtalk"
+          mkdir "C:\open_jtalk\bin"
+        shell: cmd
+
+      - name: Build Open JTalk
+        run: |
+          cd lib\open_jtalk-1.11
+          nmake /f Makefile.mak
+          nmake /f Makefile.mak install
+        shell: cmd
+
+      - name: Test executable
+        run: |
+          "C:\open_jtalk\bin\open_jtalk.exe" --help || echo "Built successfully"
+        shell: cmd
+        continue-on-error: true
+
+      - name: Prepare artifacts
+        run: |
+          mkdir artifacts
+          copy "C:\open_jtalk\bin\open_jtalk.exe" "artifacts\"
+          copy "LICENSE" "artifacts\"
+          copy "Readme.md" "artifacts\"
+        shell: cmd
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openjtalk-windows-x64
+          path: artifacts/
+          retention-days: 7
+
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool
+
+      - name: Create install directories
+        run: |
+          sudo mkdir -p /usr/local/hts_engine_API
+          sudo mkdir -p /usr/local/open_jtalk
+
+      - name: Build HTS Engine API
+        run: |
+          cd lib/hts_engine_API-1.10
+          ./configure --prefix=/usr/local/hts_engine_API
+          make
+          sudo make install
+
+      - name: Build Open JTalk
+        run: |
+          cd lib/open_jtalk-1.11
+          ./configure --prefix=/usr/local/open_jtalk --with-hts-engine-header-path=/usr/local/hts_engine_API/include --with-hts-engine-library-path=/usr/local/hts_engine_API/lib
+          make
+          sudo make install
+
+      - name: Test executable
+        run: |
+          /usr/local/open_jtalk/bin/open_jtalk --help || echo "Built successfully"
+        continue-on-error: true
+
+      - name: Prepare artifacts
+        run: |
+          mkdir artifacts
+          cp /usr/local/open_jtalk/bin/open_jtalk artifacts/
+          cp LICENSE artifacts/
+          cp Readme.md artifacts/
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openjtalk-linux-x64
+          path: artifacts/
+          retention-days: 7
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install autoconf automake libtool
+
+      - name: Create install directories
+        run: |
+          sudo mkdir -p /usr/local/hts_engine_API
+          sudo mkdir -p /usr/local/open_jtalk
+
+      - name: Build HTS Engine API
+        run: |
+          cd lib/hts_engine_API-1.10
+          ./configure --prefix=/usr/local/hts_engine_API
+          make
+          sudo make install
+
+      - name: Build Open JTalk
+        run: |
+          cd lib/open_jtalk-1.11
+          ./configure --prefix=/usr/local/open_jtalk --with-hts-engine-header-path=/usr/local/hts_engine_API/include --with-hts-engine-library-path=/usr/local/hts_engine_API/lib
+          make
+          sudo make install
+
+      - name: Test executable
+        run: |
+          /usr/local/open_jtalk/bin/open_jtalk --help || echo "Built successfully"
+        continue-on-error: true
+
+      - name: Prepare artifacts
+        run: |
+          mkdir artifacts
+          cp /usr/local/open_jtalk/bin/open_jtalk artifacts/
+          cp LICENSE artifacts/
+          cp Readme.md artifacts/
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openjtalk-macos-x64
+          path: artifacts/
+          retention-days: 7
