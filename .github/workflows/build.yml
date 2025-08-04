@@ -15,6 +15,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set Japanese Locale
+        run: |
+          Set-WinSystemLocale ja-JP
+          Set-WinUILanguageOverride ja-JP
+          [System.Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("shift_jis")
+
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
