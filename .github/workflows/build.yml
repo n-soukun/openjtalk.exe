@@ -25,14 +25,14 @@ jobs:
 
       - name: Setting directories
         run: |
-          HTSENGINE_DIR_PATH=$GITHUB_WORKSPACE/lib/hts_engine_API-1.10
-          OPENJTALK_DIR_PATH=$GITHUB_WORKSPACE/lib/open_jtalk-1.11
-          echo "HTSENGINE_DIR=$HTSENGINE_DIR_PATH" >> $GITHUB_ENV
-          echo "OPENJTALK_DIR=$OPENJTALK_DIR_PATH" >> $GITHUB_ENV
+          set HTSENGINE_DIR_PATH=%GITHUB_WORKSPACE%\lib\hts_engine_API-1.10
+          set OPENJTALK_DIR_PATH=%GITHUB_WORKSPACE%\lib\open_jtalk-1.11
+          echo HTSENGINE_DIR=%HTSENGINE_DIR_PATH%>> %GITHUB_ENV%
+          echo OPENJTALK_DIR=%OPENJTALK_DIR_PATH%>> %GITHUB_ENV%
 
       - name: Build HTS Engine API
         run: |
-          cd $HTSENGINE_DIR
+          cd %HTSENGINE_DIR%
           chcp 932
           set CFLAGS=/source-charset:shift_jis
           nmake /f Makefile.mak
@@ -41,7 +41,7 @@ jobs:
 
       - name: Build Open JTalk
         run: |
-          cd $OPENJTALK_DIR
+          cd %OPENJTALK_DIR%
           chcp 932
           set CFLAGS=/source-charset:shift_jis
           nmake /f Makefile.mak
@@ -49,14 +49,14 @@ jobs:
 
       - name: Test executable
         run: |
-          "$OPENJTALK_DIR\bin\open_jtalk.exe" --help || echo "Built successfully"
+          "%OPENJTALK_DIR%\bin\open_jtalk.exe" --help || echo Built successfully
         shell: cmd
         continue-on-error: true
 
       - name: Prepare artifacts
         run: |
           mkdir artifacts
-          copy "$OPENJTALK_DIR\bin\open_jtalk.exe" "artifacts\"
+          copy "%OPENJTALK_DIR%\bin\open_jtalk.exe" "artifacts\"
           copy "LICENSE" "artifacts\"
           copy "Readme.md" "artifacts\"
         shell: cmd
