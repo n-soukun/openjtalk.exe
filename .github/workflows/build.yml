@@ -23,11 +23,6 @@ jobs:
         with:
           arch: x64
 
-      - name: Change text encoding to Shift JIS
-        run: |
-          chcp 932
-          echo "Shift JIS encoding set"
-
       - name: Create HTS Engine API install directory
         run: |
           mkdir "C:\hts_engine_API"
@@ -52,6 +47,7 @@ jobs:
       - name: Build Open JTalk
         run: |
           cd lib\open_jtalk-1.11
+          chcp 932
           nmake /f Makefile.mak
           nmake /f Makefile.mak install
         shell: cmd
@@ -97,14 +93,18 @@ jobs:
       - name: Build HTS Engine API
         run: |
           cd lib/hts_engine_API-1.10
-          ./configure
+          chmod +x ./configure
+          ./configure --prefix=/usr/local/hts_engine_API
           make
+          sudo make install
 
       - name: Build Open JTalk
         run: |
           cd lib/open_jtalk-1.11
-          ./configure --with-charset=UTF-8 --with-hts-engine-header-path=lib/hts_engine_API-1.10/include --with-hts-engine-library-path=lib/hts_engine_API-1.10/lib
+          chmod +x ./configure
+          ./configure --prefix=/usr/local/open_jtalk --with-hts-engine-header-path=/usr/local/hts_engine_API/include --with-hts-engine-library-path=/usr/local/hts_engine_API/lib
           make
+          sudo make install
 
       - name: Test executable
         run: |
@@ -114,7 +114,7 @@ jobs:
       - name: Prepare artifacts
         run: |
           mkdir artifacts
-          cp lib/open_jtalk-1.11/bin/open_jtalk artifacts/
+          cp /usr/local/open_jtalk/bin/open_jtalk artifacts/
           cp LICENSE artifacts/
           cp Readme.md artifacts/
 
@@ -144,6 +144,7 @@ jobs:
       - name: Build HTS Engine API
         run: |
           cd lib/hts_engine_API-1.10
+          chmod +x ./configure
           ./configure --prefix=/usr/local/hts_engine_API
           make
           sudo make install
@@ -151,6 +152,7 @@ jobs:
       - name: Build Open JTalk
         run: |
           cd lib/open_jtalk-1.11
+          chmod +x ./configure
           ./configure --prefix=/usr/local/open_jtalk --with-hts-engine-header-path=/usr/local/hts_engine_API/include --with-hts-engine-library-path=/usr/local/hts_engine_API/lib
           make
           sudo make install
