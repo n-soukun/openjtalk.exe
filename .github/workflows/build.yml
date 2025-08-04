@@ -24,6 +24,7 @@ jobs:
           arch: x64
 
       - name: Setting directories
+        shell: cmd
         run: |
           set HTSENGINE_DIR_PATH=%GITHUB_WORKSPACE%\lib\hts_engine_API-1.10
           set OPENJTALK_DIR_PATH=%GITHUB_WORKSPACE%\lib\open_jtalk-1.11
@@ -31,13 +32,13 @@ jobs:
           echo OPENJTALK_DIR=%OPENJTALK_DIR_PATH%>> %GITHUB_ENV%
 
       - name: Build HTS Engine API
+        shell: cmd
         run: |
           cd %HTSENGINE_DIR%
           chcp 932
           set CFLAGS=/source-charset:shift_jis
           nmake /f Makefile.mak
           nmake /f Makefile.mak install
-        shell: cmd
 
       - name: Build Open JTalk
         run: |
