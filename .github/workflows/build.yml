@@ -36,7 +36,7 @@ jobs:
         run: |
           cd %HTSENGINE_DIR%
           chcp 932
-          set CFLAGS=/source-charset:shift_jis
+          set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis
           nmake /f Makefile.mak
           nmake /f Makefile.mak install
 
@@ -44,7 +44,7 @@ jobs:
         run: |
           cd %OPENJTALK_DIR%
           chcp 932
-          set CFLAGS=/source-charset:shift_jis
+          set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis
           nmake /f Makefile.mak
         shell: cmd
 
