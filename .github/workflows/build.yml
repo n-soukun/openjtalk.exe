@@ -23,48 +23,40 @@ jobs:
         with:
           arch: x64
 
-      - name: Create HTS Engine API install directory
+      - name: Setting directories
         run: |
-          mkdir "C:\hts_engine_API"
-          mkdir "C:\hts_engine_API\include"
-          mkdir "C:\hts_engine_API\lib"
-          mkdir "C:\hts_engine_API\bin"
-        shell: cmd
+          HTSENGINE_DIR_PATH=$GITHUB_WORKSPACE/lib/hts_engine_API-1.10
+          OPENJTALK_DIR_PATH=$GITHUB_WORKSPACE/lib/open_jtalk-1.11
+          echo "HTSENGINE_DIR=$HTSENGINE_DIR_PATH" >> $GITHUB_ENV
+          echo "OPENJTALK_DIR=$OPENJTALK_DIR_PATH" >> $GITHUB_ENV
 
       - name: Build HTS Engine API
         run: |
-          cd lib\hts_engine_API-1.10
+          cd $HTSENGINE_DIR
           chcp 932
           set CFLAGS=/source-charset:shift_jis
           nmake /f Makefile.mak
           nmake /f Makefile.mak install
-        shell: cmd
-
-      - name: Create Open JTalk install directory
-        run: |
-          mkdir "C:\open_jtalk"
-          mkdir "C:\open_jtalk\bin"
         shell: cmd
 
       - name: Build Open JTalk
         run: |
-          cd lib\open_jtalk-1.11
+          cd $OPENJTALK_DIR
           chcp 932
           set CFLAGS=/source-charset:shift_jis
           nmake /f Makefile.mak
-          nmake /f Makefile.mak install
         shell: cmd
 
       - name: Test executable
         run: |
-          "C:\open_jtalk\bin\open_jtalk.exe" --help || echo "Built successfully"
+          "$OPENJTALK_DIR\bin\open_jtalk.exe" --help || echo "Built successfully"
         shell: cmd
         continue-on-error: true
 
       - name: Prepare artifacts
         run: |
           mkdir artifacts
-          copy "C:\open_jtalk\bin\open_jtalk.exe" "artifacts\"
+          copy "$OPENJTALK_DIR\bin\open_jtalk.exe" "artifacts\"
           copy "LICENSE" "artifacts\"
           copy "Readme.md" "artifacts\"
         shell: cmd
