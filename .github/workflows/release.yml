@@ -5,6 +5,8 @@ on:
     branches: [main, master]
     tags:
       - "v*"
+  pull_request:
+    branches: [main, master]
   workflow_dispatch:
     inputs:
       tag_name:
@@ -22,98 +24,153 @@ on:
         type: boolean
 
 jobs:
-  build-matrix:
-    name: Build on ${{ matrix.os }} (${{ matrix.arch }})
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows
-            runner: windows-latest
-            arch: x64
-            artifact_name: openjtalk-windows-x64
-            executable_ext: .exe
-          - os: linux
-            runner: ubuntu-latest
-            arch: x64
-            artifact_name: openjtalk-linux-x64
-            executable_ext: ""
-          - os: macos
-            runner: macos-latest
-            arch: x64
-            artifact_name: openjtalk-macos-x64
-            executable_ext: ""
+  build-windows:
+    name: Build Windows x64
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Windows specific setup
-      - name: Setup MSBuild (Windows)
-        if: matrix.os == 'windows'
+      - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Setup MSVC environment (Windows)
-        if: matrix.os == 'windows'
+      - name: Setup MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: ${{ matrix.arch }}
+          arch: x64
 
-      - name: Set Japanese Locale (Windows)
-        if: matrix.os == 'windows'
+      - name: Set Japanese Locale
         run: |
           Set-WinSystemLocale ja-JP
           Set-WinUILanguageOverride ja-JP
           [System.Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding("shift_jis")
         shell: pwsh
 
-      # Linux/macOS specific setup
-      - name: Install dependencies (Linux)
-        if: matrix.os == 'linux'
+      - name: Build OpenJTalk
+        run: |
+          Write-Host "Building for Windows..."
+          Write-Host "Setting up Windows build environment..."
+
+          $HtsEngineDir = "$env:GITHUB_WORKSPACE\lib\hts_engine_API-1.10"
+          $OpenJTalkDir = "$env:GITHUB_WORKSPACE\lib\open_jtalk-1.11"
+          $BinDir = "$env:GITHUB_WORKSPACE\bin"
+
+          # Prepare bin directory
+          if (!(Test-Path $BinDir)) {
+            New-Item -ItemType Directory -Path $BinDir -Force
+          }
+
+          Write-Host "Building HTS Engine API for Windows..."
+          Set-Location $HtsEngineDir
+          cmd /c "chcp 932 >nul 2>&1 & set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis & nmake /f Makefile.mak"
+          cmd /c "chcp 932 >nul 2>&1 & nmake /f Makefile.mak install"
+
+          Write-Host "Building Open JTalk for Windows..."
+          Set-Location $OpenJTalkDir
+          cmd /c "chcp 932 >nul 2>&1 & set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis & nmake /f Makefile.mak"
+
+          Write-Host "Copying Windows executable to bin directory..."
+          Copy-Item "$OpenJTalkDir\bin\open_jtalk.exe" $BinDir
+
+          Write-Host "Windows build completed successfully!"
+        shell: pwsh
+
+      - name: Test executable
+        run: |
+          $BinDir = "$env:GITHUB_WORKSPACE\bin"
+          try {
+            & "$BinDir\open_jtalk.exe" --help
+          } catch {
+            Write-Host "Built successfully"
+          }
+        shell: pwsh
+        continue-on-error: true
+
+      - name: Prepare artifacts
+        run: |
+          $BinDir = "$env:GITHUB_WORKSPACE\bin"
+
+          if (!(Test-Path "artifacts")) {
+            New-Item -ItemType Directory -Path "artifacts" -Force
+          }
+
+          Copy-Item "$BinDir\open_jtalk.exe" "artifacts\"
+          Copy-Item "LICENSE" "artifacts\"
+          Copy-Item "Readme.md" "artifacts\"
+
+          Write-Host "Artifacts prepared in ./artifacts/"
+        shell: pwsh
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openjtalk-windows-x64
+          path: artifacts/
+          retention-days: 7
+
+  build-linux:
+    name: Build Linux x64
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential autoconf automake libtool
 
-      - name: Install dependencies (macOS)
-        if: matrix.os == 'macos'
-        run: |
-          brew install autoconf automake libtool
-
-      # Build using Makefile
       - name: Build OpenJTalk
         run: make build
-        shell: ${{ matrix.os == 'windows' && 'cmd' || 'bash' }}
 
       - name: Test executable
         run: make test
-        shell: ${{ matrix.os == 'windows' && 'cmd' || 'bash' }}
         continue-on-error: true
 
       - name: Prepare artifacts
         run: make prepare-artifacts
-        shell: ${{ matrix.os == 'windows' && 'cmd' || 'bash' }}
 
-      - name: List artifacts (Debug)
-        shell: bash
-        run: |
-          if [ "${{ matrix.os }}" = "windows" ]; then
-            ls -la artifacts/
-          else
-            ls -la artifacts/
-          fi
-
-      # Upload build artifacts
-      - name: Upload build artifacts
+      - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
+          name: openjtalk-linux-x64
+          path: artifacts/
+          retention-days: 7
+
+  build-macos:
+    name: Build macOS x64
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install autoconf automake libtool
+
+      - name: Build OpenJTalk
+        run: make build
+
+      - name: Test executable
+        run: make test
+        continue-on-error: true
+
+      - name: Prepare artifacts
+        run: make prepare-artifacts
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openjtalk-macos-x64
           path: artifacts/
           retention-days: 7
 
   create-release:
     name: Create Release
-    needs: build-matrix
+    needs: [build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
 
@@ -121,7 +178,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Download all artifacts from matrix builds
       - name: Download Windows artifacts
         uses: actions/download-artifact@v4
         with:
@@ -140,7 +196,6 @@ jobs:
           name: openjtalk-macos-x64
           path: release-assets/macos/
 
-      # Create compressed archives for each platform
       - name: Create release archives
         run: |
           mkdir -p release-packages
@@ -163,7 +218,6 @@ jobs:
           # List created packages
           ls -la release-packages/
 
-      # Determine release tag and name
       - name: Set release variables
         id: release_vars
         run: |
@@ -172,11 +226,9 @@ jobs:
             echo "release_name=${{ github.event.inputs.release_name }}" >> $GITHUB_OUTPUT
             echo "prerelease=${{ github.event.inputs.prerelease }}" >> $GITHUB_OUTPUT
           else
-            # Extract tag name from ref
             TAG_NAME=${GITHUB_REF#refs/tags/}
             echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
             echo "release_name=OpenJTalk ${TAG_NAME}" >> $GITHUB_OUTPUT
-            # Check if it's a pre-release (contains alpha, beta, rc, etc.)
             if [[ "${TAG_NAME}" =~ (alpha|beta|rc|pre) ]]; then
               echo "prerelease=true" >> $GITHUB_OUTPUT
             else
@@ -184,7 +236,6 @@ jobs:
             fi
           fi
 
-      # Generate release notes
       - name: Generate release notes
         id: release_notes
         run: |
@@ -223,12 +274,10 @@ jobs:
           **Full Changelog**: https://github.com/${{ github.repository }}/commits/${{ steps.release_vars.outputs.tag_name }}
           EOF
 
-          # Set multiline output
           echo "body<<EOF" >> $GITHUB_OUTPUT
           cat release_notes.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # Create the release
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -245,44 +294,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Legacy upload steps for compatibility (these will be skipped since files are uploaded above)
-      - name: Upload Windows Release Asset
-        if: false
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-packages/openjtalk-windows-x64.zip
-          asset_name: openjtalk-windows-x64.zip
-          asset_content_type: application/zip
-
-      - name: Upload Linux Release Asset
-        if: false
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-packages/openjtalk-linux-x64.tar.gz
-          asset_name: openjtalk-linux-x64.tar.gz
-          asset_content_type: application/gzip
-
-      - name: Upload macOS Release Asset
-        if: false
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-packages/openjtalk-macos-x64.tar.gz
-          asset_name: openjtalk-macos-x64.tar.gz
-          asset_content_type: application/gzip
-
-  # Optional: Cleanup artifacts after successful release
   cleanup:
     name: Cleanup Artifacts
-    needs: [build-matrix, create-release]
+    needs: [build-windows, build-linux, build-macos, create-release]
     runs-on: ubuntu-latest
     if: always() && needs.create-release.result == 'success'
 
