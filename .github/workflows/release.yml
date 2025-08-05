@@ -233,36 +233,18 @@ jobs:
           cat > release_notes.md << 'EOF'
           ## OpenJTalk Release ${{ steps.release_vars.outputs.tag_name }}
 
-          ### 📦 Downloads
+          ### 📦 ダウンロード
 
-          | Platform | Architecture | Download |
-          |----------|-------------|----------|
+          |    OS    |     CPU     | ダウンロードリンク |
+          |----------|-------------|------------------|
           | Windows  | x64         | [openjtalk-windows-x64.zip](https://github.com/${{ github.repository }}/releases/download/${{ steps.release_vars.outputs.tag_name }}/openjtalk-windows-x64.zip) |
           | Linux    | x64         | [openjtalk-linux-x64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.release_vars.outputs.tag_name }}/openjtalk-linux-x64.tar.gz) |
           | macOS    | x64         | [openjtalk-macos-x64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.release_vars.outputs.tag_name }}/openjtalk-macos-x64.tar.gz) |
 
-          ### 🛠️ Build Information
+          ### ⚖️ ライセンス
 
-          - **Built with**: Multi-platform Makefile
-          - **CI/CD**: GitHub Actions
-          - **Commit**: ${{ github.sha }}
-          - **Build date**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-
-          ### 📋 Usage
-
-          1. Download the appropriate package for your platform
-          2. Extract the archive
-          3. Run the `open_jtalk` executable
-
-          For detailed usage instructions, please refer to the [README](https://github.com/${{ github.repository }}/blob/main/Readme.md).
-
-          ### 🔄 Changes
-
-          This release includes the latest changes from the main branch as of commit ${{ github.sha }}.
-
-          ---
-
-          **Full Changelog**: https://github.com/${{ github.repository }}/commits/${{ steps.release_vars.outputs.tag_name }}
+          ソースコード及びビルド済みファイルは修正 BSD ライセンス（3 条項 BSD）で配布しています。
+          詳しくは`LICENSE`ファイルを参照ください。
           EOF
 
           echo "body<<EOF" >> $GITHUB_OUTPUT
