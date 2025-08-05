@@ -83,13 +83,16 @@ jobs:
       # Build using Makefile
       - name: Build OpenJTalk
         run: make build
+        shell: bash
 
       - name: Test executable
         run: make test
+        shell: bash
         continue-on-error: true
 
       - name: Prepare artifacts
         run: make prepare-artifacts
+        shell: bash
 
       - name: List artifacts (Debug)
         shell: bash

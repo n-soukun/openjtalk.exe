@@ -41,15 +41,13 @@ endif
 # Windows build process
 build-windows: prepare-bin-dir
 	@echo Setting up Windows build environment...
-	chcp 932
-	set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis
 	@echo Building HTS Engine API for Windows...
-	cd $(HTSENGINE_DIR) && nmake /f Makefile.mak
-	cd $(HTSENGINE_DIR) && nmake /f Makefile.mak install
+	cd $(HTSENGINE_DIR) && cmd //c "chcp 932 && set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis && nmake /f Makefile.mak"
+	cd $(HTSENGINE_DIR) && cmd //c "nmake /f Makefile.mak install"
 	@echo Building Open JTalk for Windows...
-	cd $(OPENJTALK_DIR) && chcp 932 && set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis && nmake /f Makefile.mak
+	cd $(OPENJTALK_DIR) && cmd //c "chcp 932 && set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis && nmake /f Makefile.mak"
 	@echo Copying Windows executable to bin directory...
-	copy "$(OPENJTALK_DIR)\bin\open_jtalk.exe" "$(BIN_DIR)\"
+	cp "$(OPENJTALK_DIR)/bin/open_jtalk.exe" "$(BIN_DIR)/"
 	@echo Windows build completed successfully!
 
 # Linux build process
@@ -88,7 +86,7 @@ build-macos: prepare-bin-dir
 prepare-bin-dir:
 	@echo Preparing bin directory...
 ifeq ($(DETECTED_OS),Windows)
-	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
+	@if [ ! -d "$(BIN_DIR)" ]; then mkdir -p "$(BIN_DIR)"; fi
 else
 	@mkdir -p $(BIN_DIR)
 endif
@@ -125,7 +123,7 @@ check-macos-deps:
 test:
 	@echo Testing built executable...
 ifeq ($(DETECTED_OS),Windows)
-	"$(BIN_DIR)\open_jtalk.exe" --help || echo Built successfully
+	"$(BIN_DIR)/open_jtalk.exe" --help || echo Built successfully
 else
 	$(BIN_DIR)/open_jtalk --help || echo "Built successfully"
 endif
@@ -152,10 +150,10 @@ endif
 prepare-artifacts: build
 	@echo Preparing artifacts...
 ifeq ($(DETECTED_OS),Windows)
-	@if not exist "artifacts" mkdir "artifacts"
-	copy "$(BIN_DIR)\open_jtalk.exe" "artifacts\"
-	copy "LICENSE" "artifacts\"
-	copy "Readme.md" "artifacts\"
+	@mkdir -p artifacts
+	cp "$(BIN_DIR)/open_jtalk.exe" "artifacts/"
+	cp "LICENSE" "artifacts/"
+	cp "Readme.md" "artifacts/"
 else
 	@mkdir -p artifacts
 	cp $(BIN_DIR)/open_jtalk artifacts/
@@ -168,10 +166,10 @@ endif
 clean:
 	@echo Cleaning build files...
 ifeq ($(DETECTED_OS),Windows)
-	cd $(HTSENGINE_DIR) && nmake /f Makefile.mak clean
-	cd $(OPENJTALK_DIR) && nmake /f Makefile.mak clean
-	@if exist "$(BIN_DIR)\open_jtalk.exe" del "$(BIN_DIR)\open_jtalk.exe"
-	@if exist "artifacts" rmdir /s /q "artifacts"
+	cd $(HTSENGINE_DIR) && cmd //c "nmake /f Makefile.mak clean" || true
+	cd $(OPENJTALK_DIR) && cmd //c "nmake /f Makefile.mak clean" || true
+	@rm -f "$(BIN_DIR)/open_jtalk.exe"
+	@rm -rf "artifacts"
 else
 	cd $(HTSENGINE_DIR) && make clean || true
 	cd $(OPENJTALK_DIR) && make clean || true
