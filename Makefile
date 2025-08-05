@@ -5,10 +5,19 @@
 # Detect the operating system
 ifeq ($(OS),Windows_NT)
     DETECTED_OS := Windows
-    SHELL := cmd.exe
-    .SHELLFLAGS := /c
+    # Use Unix-style commands even on Windows in GitHub Actions
+    MKDIR_P = mkdir -p
+    RM_RF = rm -rf
+    RM_F = rm -f
+    CP = cp
+    TEST_DIR = test -d
 else
     DETECTED_OS := $(shell uname -s)
+    MKDIR_P = mkdir -p
+    RM_RF = rm -rf
+    RM_F = rm -f
+    CP = cp
+    TEST_DIR = test -d
 endif
 
 # Directory paths
@@ -42,54 +51,50 @@ endif
 build-windows: prepare-bin-dir
 	@echo Setting up Windows build environment...
 	@echo Building HTS Engine API for Windows...
-	cd $(HTSENGINE_DIR) && cmd //c "chcp 932 && set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis && nmake /f Makefile.mak"
-	cd $(HTSENGINE_DIR) && cmd //c "nmake /f Makefile.mak install"
+	cd "$(HTSENGINE_DIR)" && cmd //c "chcp 932 & set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis & nmake /f Makefile.mak"
+	cd "$(HTSENGINE_DIR)" && cmd //c "chcp 932 & nmake /f Makefile.mak install"
 	@echo Building Open JTalk for Windows...
-	cd $(OPENJTALK_DIR) && cmd //c "chcp 932 && set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis && nmake /f Makefile.mak"
+	cd "$(OPENJTALK_DIR)" && cmd //c "chcp 932 & set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis & nmake /f Makefile.mak"
 	@echo Copying Windows executable to bin directory...
-	cp "$(OPENJTALK_DIR)/bin/open_jtalk.exe" "$(BIN_DIR)/"
+	$(CP) "$(OPENJTALK_DIR)/bin/open_jtalk.exe" "$(BIN_DIR)/"
 	@echo Windows build completed successfully!
 
 # Linux build process
 build-linux: prepare-bin-dir
 	@echo Building HTS Engine API for Linux...
-	cd $(HTSENGINE_DIR) && autoreconf -f -i
-	cd $(HTSENGINE_DIR) && chmod +x ./configure
-	cd $(HTSENGINE_DIR) && ./configure
-	cd $(HTSENGINE_DIR) && make
+	cd "$(HTSENGINE_DIR)" && autoreconf -f -i
+	cd "$(HTSENGINE_DIR)" && chmod +x ./configure
+	cd "$(HTSENGINE_DIR)" && ./configure
+	cd "$(HTSENGINE_DIR)" && make
 	@echo Building Open JTalk for Linux...
-	cd $(OPENJTALK_DIR) && autoreconf -f -i
-	cd $(OPENJTALK_DIR) && chmod +x ./configure
-	cd $(OPENJTALK_DIR) && ./configure --with-charset=UTF-8 --with-hts-engine-header-path=$(HTSENGINE_DIR)/include --with-hts-engine-library-path=$(HTSENGINE_DIR)/lib
-	cd $(OPENJTALK_DIR) && make
+	cd "$(OPENJTALK_DIR)" && autoreconf -f -i
+	cd "$(OPENJTALK_DIR)" && chmod +x ./configure
+	cd "$(OPENJTALK_DIR)" && ./configure --with-charset=UTF-8 --with-hts-engine-header-path="$(HTSENGINE_DIR)/include" --with-hts-engine-library-path="$(HTSENGINE_DIR)/lib"
+	cd "$(OPENJTALK_DIR)" && make
 	@echo Copying Linux executable to bin directory...
-	cp $(OPENJTALK_DIR)/bin/open_jtalk $(BIN_DIR)/
+	$(CP) "$(OPENJTALK_DIR)/bin/open_jtalk" "$(BIN_DIR)/"
 	@echo Linux build completed successfully!
 
 # macOS build process
 build-macos: prepare-bin-dir
 	@echo Building HTS Engine API for macOS...
-	cd $(HTSENGINE_DIR) && autoreconf -f -i
-	cd $(HTSENGINE_DIR) && chmod +x ./configure
-	cd $(HTSENGINE_DIR) && ./configure
-	cd $(HTSENGINE_DIR) && make
+	cd "$(HTSENGINE_DIR)" && autoreconf -f -i
+	cd "$(HTSENGINE_DIR)" && chmod +x ./configure
+	cd "$(HTSENGINE_DIR)" && ./configure
+	cd "$(HTSENGINE_DIR)" && make
 	@echo Building Open JTalk for macOS...
-	cd $(OPENJTALK_DIR) && autoreconf -f -i
-	cd $(OPENJTALK_DIR) && chmod +x ./configure
-	cd $(OPENJTALK_DIR) && ./configure --with-charset=UTF-8 --with-hts-engine-header-path=$(HTSENGINE_DIR)/include --with-hts-engine-library-path=$(HTSENGINE_DIR)/lib
-	cd $(OPENJTALK_DIR) && make
+	cd "$(OPENJTALK_DIR)" && autoreconf -f -i
+	cd "$(OPENJTALK_DIR)" && chmod +x ./configure
+	cd "$(OPENJTALK_DIR)" && ./configure --with-charset=UTF-8 --with-hts-engine-header-path="$(HTSENGINE_DIR)/include" --with-hts-engine-library-path="$(HTSENGINE_DIR)/lib"
+	cd "$(OPENJTALK_DIR)" && make
 	@echo Copying macOS executable to bin directory...
-	cp $(OPENJTALK_DIR)/bin/open_jtalk $(BIN_DIR)/
+	$(CP) "$(OPENJTALK_DIR)/bin/open_jtalk" "$(BIN_DIR)/"
 	@echo macOS build completed successfully!
 
 # Prepare bin directory
 prepare-bin-dir:
 	@echo Preparing bin directory...
-ifeq ($(DETECTED_OS),Windows)
-	@if [ ! -d "$(BIN_DIR)" ]; then mkdir -p "$(BIN_DIR)"; fi
-else
-	@mkdir -p $(BIN_DIR)
-endif
+	@$(MKDIR_P) "$(BIN_DIR)"
 
 # Check dependencies for all platforms
 check-deps:
@@ -125,7 +130,7 @@ test:
 ifeq ($(DETECTED_OS),Windows)
 	"$(BIN_DIR)/open_jtalk.exe" --help || echo Built successfully
 else
-	$(BIN_DIR)/open_jtalk --help || echo "Built successfully"
+	"$(BIN_DIR)/open_jtalk" --help || echo "Built successfully"
 endif
 
 # Install dependencies (for CI/automated builds)
@@ -149,43 +154,39 @@ endif
 # Prepare artifacts for distribution
 prepare-artifacts: build
 	@echo Preparing artifacts...
+	@$(MKDIR_P) artifacts
 ifeq ($(DETECTED_OS),Windows)
-	@mkdir -p artifacts
-	cp "$(BIN_DIR)/open_jtalk.exe" "artifacts/"
-	cp "LICENSE" "artifacts/"
-	cp "Readme.md" "artifacts/"
+	$(CP) "$(BIN_DIR)/open_jtalk.exe" "artifacts/"
 else
-	@mkdir -p artifacts
-	cp $(BIN_DIR)/open_jtalk artifacts/
-	cp LICENSE artifacts/
-	cp Readme.md artifacts/
+	$(CP) "$(BIN_DIR)/open_jtalk" "artifacts/"
 endif
+	$(CP) "LICENSE" "artifacts/"
+	$(CP) "Readme.md" "artifacts/"
 	@echo Artifacts prepared in ./artifacts/
 
 # Clean build files
 clean:
 	@echo Cleaning build files...
 ifeq ($(DETECTED_OS),Windows)
-	cd $(HTSENGINE_DIR) && cmd //c "nmake /f Makefile.mak clean" || true
-	cd $(OPENJTALK_DIR) && cmd //c "nmake /f Makefile.mak clean" || true
-	@rm -f "$(BIN_DIR)/open_jtalk.exe"
-	@rm -rf "artifacts"
+	cd "$(HTSENGINE_DIR)" && cmd //c "nmake /f Makefile.mak clean" || true
+	cd "$(OPENJTALK_DIR)" && cmd //c "nmake /f Makefile.mak clean" || true
+	@$(RM_F) "$(BIN_DIR)/open_jtalk.exe"
 else
-	cd $(HTSENGINE_DIR) && make clean || true
-	cd $(OPENJTALK_DIR) && make clean || true
-	rm -f $(BIN_DIR)/open_jtalk
-	rm -rf artifacts
+	cd "$(HTSENGINE_DIR)" && make clean || true
+	cd "$(OPENJTALK_DIR)" && make clean || true
+	@$(RM_F) "$(BIN_DIR)/open_jtalk"
 endif
+	@$(RM_RF) "artifacts"
 	@echo Clean completed!
 
 # Deep clean - remove all generated files including configure scripts
 distclean: clean
 	@echo Performing deep clean...
 ifneq ($(DETECTED_OS),Windows)
-	cd $(HTSENGINE_DIR) && make distclean || true
-	cd $(OPENJTALK_DIR) && make distclean || true
-	find $(HTSENGINE_DIR) -name "Makefile" -not -name "Makefile.mak" -not -name "Makefile.am" -delete || true
-	find $(OPENJTALK_DIR) -name "Makefile" -not -name "Makefile.mak" -not -name "Makefile.am" -delete || true
+	cd "$(HTSENGINE_DIR)" && make distclean || true
+	cd "$(OPENJTALK_DIR)" && make distclean || true
+	find "$(HTSENGINE_DIR)" -name "Makefile" -not -name "Makefile.mak" -not -name "Makefile.am" -delete || true
+	find "$(OPENJTALK_DIR)" -name "Makefile" -not -name "Makefile.mak" -not -name "Makefile.am" -delete || true
 endif
 	@echo Deep clean completed!
 
