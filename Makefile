@@ -51,10 +51,10 @@ endif
 build-windows: prepare-bin-dir
 	@echo Setting up Windows build environment...
 	@echo Building HTS Engine API for Windows...
-	cd "$(HTSENGINE_DIR)" && cmd //c "chcp 932 & set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis & nmake /f Makefile.mak"
-	cd "$(HTSENGINE_DIR)" && cmd //c "chcp 932 & nmake /f Makefile.mak install"
+	cd "$(HTSENGINE_DIR)" && cmd //c "chcp 932 >nul 2>&1 & set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis & nmake /f Makefile.mak"
+	cd "$(HTSENGINE_DIR)" && cmd //c "chcp 932 >nul 2>&1 & nmake /f Makefile.mak install"
 	@echo Building Open JTalk for Windows...
-	cd "$(OPENJTALK_DIR)" && cmd //c "chcp 932 & set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis & nmake /f Makefile.mak"
+	cd "$(OPENJTALK_DIR)" && cmd //c "chcp 932 >nul 2>&1 & set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis & nmake /f Makefile.mak"
 	@echo Copying Windows executable to bin directory...
 	$(CP) "$(OPENJTALK_DIR)/bin/open_jtalk.exe" "$(BIN_DIR)/"
 	@echo Windows build completed successfully!
