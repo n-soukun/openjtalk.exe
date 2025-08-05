@@ -76,17 +76,6 @@ jobs:
           Write-Host "Windows build completed successfully!"
         shell: pwsh
 
-      - name: Test executable
-        run: |
-          $BinDir = "$env:GITHUB_WORKSPACE\bin"
-          try {
-            & "$BinDir\open_jtalk.exe" --help
-          } catch {
-            Write-Host "Built successfully"
-          }
-        shell: pwsh
-        continue-on-error: true
-
       - name: Prepare artifacts
         run: |
           $BinDir = "$env:GITHUB_WORKSPACE\bin"
