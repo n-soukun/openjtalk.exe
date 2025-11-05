@@ -74,7 +74,14 @@ OPEN_JTALK_C_START;
 #include "njd_set_long_vowel.h"
 #include "njd2jpcommon.h"
 
+/* for Windows */
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
+
 #define MAXBUFLEN 1024
+
 
 typedef struct _Open_JTalk {
    Mecab mecab;
@@ -192,6 +199,9 @@ static int Open_JTalk_synthesis(Open_JTalk * open_jtalk, const char *txt, FILE *
       if (wavfp != NULL) {
          HTS_Engine_save_riff(&open_jtalk->engine, wavfp);
       } else {
+         #ifdef _WIN32
+            _setmode(_fileno(stdout), O_BINARY);
+         #endif
          HTS_Engine_save_riff(&open_jtalk->engine, stdout);
       }
       if (logfp != NULL) {
