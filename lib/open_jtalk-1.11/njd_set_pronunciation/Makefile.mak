@@ -1,7 +1,11 @@
 
 CC = cl
 
-CFLAGS = /O2 /Ob2 /Oi /Ot /Oy /GT /GL /TC /I ../njd /D CHARSET_SHIFT_JIS
+!IFNDEF CHARSET
+CHARSET = SHIFT_JIS
+!ENDIF
+
+CFLAGS = /O2 /Ob2 /Oi /Ot /Oy /GT /GL /TC /I ../njd /D CHARSET_$(CHARSET)
 LFLAGS = /LTCG
 
 CORES = njd_set_pronunciation.obj

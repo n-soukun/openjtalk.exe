@@ -48,13 +48,19 @@ else
 endif
 
 # Windows build process
+CHARSET ?= SHIFT_JIS
 build-windows: prepare-bin-dir
 	@echo Setting up Windows build environment...
 	@echo Building HTS Engine API for Windows...
 	cd "$(HTSENGINE_DIR)" && cmd //c "chcp 932 >nul 2>&1 & set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis & nmake /f Makefile.mak"
 	cd "$(HTSENGINE_DIR)" && cmd //c "chcp 932 >nul 2>&1 & nmake /f Makefile.mak install"
-	@echo Building Open JTalk for Windows...
+	ifeq ($(CHARSET),UTF-8)
+	@echo Building Open JTalk for Windows (UTF-8)...
+	cd "$(OPENJTALK_DIR)" && cmd //c "chcp 65001 >nul 2>&1 & set CFLAGS=/source-charset:utf-8 /execution-charset:utf-8 & nmake /f Makefile.mak CHARSET=UTF_8"
+	else
+	@echo Building Open JTalk for Windows (Shift_JIS)...
 	cd "$(OPENJTALK_DIR)" && cmd //c "chcp 932 >nul 2>&1 & set CFLAGS=/source-charset:shift_jis /execution-charset:shift_jis & nmake /f Makefile.mak"
+	endif
 	@echo Copying Windows executable to bin directory...
 	$(CP) "$(OPENJTALK_DIR)/bin/open_jtalk.exe" "$(BIN_DIR)/"
 	@echo Windows build completed successfully!

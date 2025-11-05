@@ -1,48 +1,52 @@
 
 INSTALLDIR = C:\open_jtalk
 
+!IFNDEF CHARSET
+CHARSET = SHIFT_JIS
+!ENDIF
+
 all:
 	cd text2mecab
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd mecab
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd mecab2njd
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd njd
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd njd_set_pronunciation
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd njd_set_digit
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd njd_set_accent_phrase
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd njd_set_accent_type
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd njd_set_unvoiced_vowel
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd njd_set_long_vowel
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd njd2jpcommon
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd jpcommon
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd bin
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 	cd mecab-naist-jdic
-	nmake /f Makefile.mak
+	nmake /f Makefile.mak CHARSET=$(CHARSET)
 	cd ..
 
 clean:
